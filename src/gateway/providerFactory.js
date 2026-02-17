@@ -1,10 +1,11 @@
 /**
  * Factory for creating provider instances
- * Centralizes provider instantiation and configuration
  */
 
 const OpenAIProvider = require('../providers/openaiProvider');
 const AnthropicProvider = require('../providers/anthropicProvider');
+const MockProvider = require('../providers/mockProvider');
+
 const config = require('../utils/config');
 const logger = require('../utils/logger');
 
@@ -15,59 +16,56 @@ class ProviderFactory {
   }
 
   initializeProviders() {
-    // Initialize OpenAI
+    // ------------------------
+    // Real Providers
+    // ------------------------
+
     if (config.providers.openai.apiKey) {
-      this.providers.set('openai', new OpenAIProvider(config.providers.openai));
+      this.providers.set(
+        'openai',
+        new OpenAIProvider(config.providers.openai)
+      );
       logger.info('OpenAI provider initialized');
     }
 
-    // Initialize Anthropic
     if (config.providers.anthropic.apiKey) {
-      this.providers.set('anthropic', new AnthropicProvider(config.providers.anthropic));
+      this.providers.set(
+        'anthropic',
+        new AnthropicProvider(config.providers.anthropic)
+      );
       logger.info('Anthropic provider initialized');
     }
 
-    if (this.providers.size === 0) {
-      logger.warn('No providers initialized. Configure API keys to enable providers.');
-    }
+    // ------------------------
+    // Mock Provider (Always)
+    // ------------------------
+
+    this.providers.set(
+      'mock',
+      new MockProvider({})
+    );
+
+    logger.info('Mock provider initialized');
+
+    logger.info('Available providers', {
+      providers: Array.from(this.providers.keys())
+    });
   }
 
-  /**
-   * Get a provider by name
-   * @param {string} providerName - Name of the provider
-   * @returns {BaseProvider} Provider instance
-   */
-  getProvider(providerName) {
-    const provider = this.providers.get(providerName);
+  getProvider(name) {
+    const provider = this.providers.get(name);
     if (!provider) {
-      throw new Error(`Provider '${providerName}' not found or not configured`);
+      throw new Error(`Provider '${name}' not found`);
     }
     return provider;
   }
 
-  /**
-   * Get all configured providers
-   * @returns {Array<BaseProvider>} Array of provider instances
-   */
-  getAllProviders() {
-    return Array.from(this.providers.values());
-  }
-
-  /**
-   * Get names of all configured providers
-   * @returns {Array<string>} Array of provider names
-   */
   getProviderNames() {
     return Array.from(this.providers.keys());
   }
 
-  /**
-   * Check if a provider is configured
-   * @param {string} providerName - Name of the provider
-   * @returns {boolean} True if provider is configured
-   */
-  hasProvider(providerName) {
-    return this.providers.has(providerName);
+  hasProvider(name) {
+    return this.providers.has(name);
   }
 }
 

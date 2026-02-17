@@ -1,351 +1,291 @@
-# 🛡️ Secure LLM Gateway
+# 🛡 Secure LLM Gateway
 
-> Production-ready FastAPI-based Secure LLM Gateway for safe, scalable, and observable LLM access in enterprise environments.
+A production-grade, secure, resilient, cost-aware LLM orchestration layer built with Node.js + Express.
 
----
+=====================================================================
 
-## 📌 Overview
+🚀 HOW TO SWITCH FROM MOCK (DEVELOPMENT) → PRODUCTION (REAL LLM)
 
-Secure LLM Gateway is a middleware layer built to safely expose Large Language Models (LLMs) in production systems.
+=====================================================================
 
-Instead of directly calling LLM providers (OpenAI, Anthropic, etc.), applications interact with this gateway which enforces:
+This project runs in two modes: Development (Mock) and Production (Real LLM).
 
-- 🔐 Authentication & Authorization  
-- 🛡 Prompt Injection Protection  
-- ⚡ Rate Limiting  
-- 📚 Retrieval-Augmented Generation (RAG)  
-- 🔄 Multi-Model Routing  
-- 📊 Observability & Cost Tracking  
+---------------------------------------------------------------------
+✅ DEVELOPMENT MODE (NO API KEYS REQUIRED)
+---------------------------------------------------------------------
 
-This project demonstrates real-world GenAI backend architecture patterns used in production systems.
+The system runs fully using:
+- Mock LLM provider
+- Mock embeddings
+- Redis (for rate limiting & caching)
 
----
+You DO NOT need OpenAI or Anthropic keys.
 
-## 🚨 Why This Exists
+Your `.env` should contain:
 
-Direct LLM API exposure introduces serious risks:
+PORT=3000
+NODE_ENV=development
+GATEWAY_API_KEY=dev-gateway-key
+REDIS_URL=redis://default:<password>@<host>:<port>
+CACHE_ENABLED=true
+RAG_ENABLED=true
+USER_MAX_RPM=60
+ADMIN_MAX_RPM=300
+RATE_LIMIT_WINDOW_MS=60000
 
-- Prompt injection attacks
-- Data exfiltration
-- Token abuse and cost spikes
-- Lack of governance
-- No request monitoring
-- No model control layer
+Use `"provider": "mock"` in your request body.
 
-This gateway acts as a **security and control plane** between clients and LLM providers.
-
----
-
-# 🏗️ System Architecture
-
-```
-                ┌─────────────┐
-                │   Client    │
-                └──────┬──────┘
-                       │
-                       ▼
-               ┌───────────────┐
-               │ JWT Auth Layer│
-               └──────┬────────┘
-                      │
-                      ▼
-               ┌───────────────┐
-               │ Rate Limiter  │
-               └──────┬────────┘
-                      │
-                      ▼
-               ┌───────────────┐
-               │ Prompt Guards │
-               └──────┬────────┘
-                      │
-                      ▼
-               ┌───────────────┐
-               │   RAG Layer   │
-               └──────┬────────┘
-                      │
-                      ▼
-               ┌───────────────┐
-               │ Model Router  │
-               └──────┬────────┘
-                      │
-                      ▼
-          ┌─────────────────────────┐
-          │ LLM Provider (OpenAI /  │
-          │ Anthropic / Local LLM)  │
-          └─────────────────────────┘
-```
-
----
-
-# 🔐 Security Layer
-
-## 1️⃣ Authentication & Authorization
-
-- JWT validation
-- Role-based access control
-- API key verification
-- User identity extraction
-
-Prevents unauthorized LLM access.
-
----
-
-## 2️⃣ Prompt Guardrails
-
-Basic protections against:
-
-- Prompt injection attacks
-- Jailbreak attempts
-- Malicious instruction overrides
-- Data exfiltration prompts
-
-Implemented using:
-
-- Regex-based filters
-- Keyword blocklist
-- Token length validation
-- Input schema enforcement
-
----
-
-## 3️⃣ Rate Limiting
-
-Prevents:
-
-- API abuse
-- Denial-of-service
-- Excessive token usage
-
-Supports:
-
-- Per-user rate limits
-- Configurable limits
-- Redis-backed distributed rate limiting (optional)
-
----
-
-# 📚 RAG (Retrieval-Augmented Generation)
-
-Optional retrieval pipeline to reduce hallucination and improve factual grounding.
-
-### Features
-
-- Embedding-based similarity search
-- FAISS vector store (or pluggable backend)
-- Top-K retrieval
-- Metadata filtering
-- Context trimming to fit token window
-- Re-ranking support (optional)
-
-### Why RAG?
-
-- Improves factual accuracy
-- Reduces hallucination
-- Enables domain-specific AI
-- Provides context-aware responses
-
----
-
-# 🔄 Model Routing Layer
-
-Supports dynamic routing between:
-
-- OpenAI
-- Anthropic
-- Local/self-hosted models
-
-Routing can be configured based on:
-
-- User tier (free vs premium)
-- Cost optimization
-- Fallback strategies
-- Model availability
-- Request type
-
----
-
-# 📊 Observability & Monitoring
-
-Each request logs:
-
-- Request ID
-- User ID
-- Model used
-- Latency
-- Token usage (estimated)
-- Cost estimation
-- Timestamp
-
-Enables:
-
-- Cost tracking
-- Performance monitoring
-- Usage analytics
-- Debugging
-- Abuse detection
-
----
-
-# 🧠 Concurrency & Scalability
-
-Built using:
-
-- FastAPI (async support)
-- Non-blocking request handling
-- Stateless architecture
-- Horizontal scalability ready
-- Docker-compatible
-
-Supports concurrent multi-user LLM workloads.
-
----
-
-# 🛠️ Tech Stack
-
-- Python 3.10+
-- FastAPI
-- Pydantic
-- FAISS (optional)
-- Redis (optional)
-- Docker
-- OpenAI SDK
-- Anthropic SDK
-
----
-
-# 📁 Project Structure
-
-```
-secure-llm-gateway/
-│
-├── app/
-│   ├── main.py
-│   ├── config.py
-│   │
-│   ├── api/
-│   │   ├── routes.py
-│   │   └── dependencies.py
-│   │
-│   ├── core/
-│   │   ├── auth.py
-│   │   ├── rate_limiter.py
-│   │   ├── guardrails.py
-│   │   └── logging.py
-│   │
-│   ├── llm/
-│   │   ├── router.py
-│   │   ├── providers.py
-│   │   └── prompt_sanitizer.py
-│   │
-│   ├── rag/
-│   │   ├── retriever.py
-│   │   ├── reranker.py
-│   │   └── context_builder.py
-│   │
-│   └── schemas/
-│       ├── request.py
-│       └── response.py
-│
-├── tests/
-├── Dockerfile
-├── docker-compose.yml
-└── requirements.txt
-```
-
-Clear separation of concerns:
-
-- API Layer
-- Security Layer
-- LLM Routing Layer
-- Retrieval Layer
-- Observability Layer
-
----
-
-# ▶️ Running Locally
-
-## 1️⃣ Clone Repository
-
-```bash
-git clone https://github.com/your-username/secure-llm-gateway.git
-cd secure-llm-gateway
-```
-
-## 2️⃣ Create `.env` File
-
-```
-OPENAI_API_KEY=your_api_key
-ANTHROPIC_API_KEY=your_key
-JWT_SECRET=your_secret
-```
-
-## 3️⃣ Run with Docker
-
-```bash
-docker-compose up --build
-```
-
-Or run manually:
-
-```bash
-pip install -r requirements.txt
-uvicorn app.main:app --reload
-```
-
----
-
-# 📌 Example API Call
-
-```
-POST /v1/chat
-Authorization: Bearer <JWT_TOKEN>
-Content-Type: application/json
+Example request:
 
 {
-  "model": "gpt-4",
-  "prompt": "Explain vector databases in simple terms.",
-  "use_rag": true
+  "prompt": "Explain JWT",
+  "provider": "mock"
 }
-```
 
----
+---------------------------------------------------------------------
+🚀 PRODUCTION MODE (REAL LLM PROVIDERS)
+---------------------------------------------------------------------
 
-# 🎯 Use Cases
+To move to production:
 
-- Enterprise AI systems
-- Secure internal AI assistants
-- Production RAG systems
-- SaaS AI platforms
-- Multi-tenant AI infrastructure
-- Agent-based systems
+1️⃣ Add real provider API key
 
----
+For OpenAI:
+OPENAI_API_KEY=your_openai_key
+OPENAI_DEFAULT_MODEL=gpt-4o
+OPENAI_EMBEDDING_MODEL=text-embedding-3-small
 
-# 🔮 Future Improvements
+OR for Anthropic:
+ANTHROPIC_API_KEY=your_anthropic_key
 
-- Multi-tenant isolation
-- Streaming responses
-- LLM fallback mechanism
-- Advanced semantic injection detection
-- OpenTelemetry tracing
-- Kubernetes deployment
-- Cost dashboard
-- Prompt caching
+2️⃣ Set environment:
+NODE_ENV=production
 
----
+3️⃣ Restart server:
+npm run dev
 
-# 📄 License
+4️⃣ Remove `"provider": "mock"` from request body.
 
-MIT License
+The gateway automatically switches to real providers.
+No code changes required.
 
----
+=====================================================================
 
-# 👨‍💻 Author
+📌 WHAT THIS GATEWAY DOES
 
-Built as a production-style GenAI backend system focusing on:
+=====================================================================
 
-- Security
-- Scalability
-- Reliability
-- Observability
-- Clean architecture design
+This system sits between your application and LLM providers and adds:
+
+- 🔐 Authentication (API Key + JWT)
+- ⚡ Distributed Rate Limiting (Redis)
+- 🛡 Prompt Injection Guardrails
+- 🧠 Hybrid RAG Engine
+- 🔁 Circuit Breaker Protection
+- ⏱ Global Timeout + Retry Logic
+- 💰 Cost Estimation
+- 🧮 Token Counting
+- 🗄 Redis Response Caching
+- 🧪 Full Offline Mock Mode
+
+=====================================================================
+
+🧠 REQUEST FLOW
+
+=====================================================================
+
+Client
+  ↓
+Authentication
+  ↓
+Rate Limiting (Redis)
+  ↓
+Guardrails
+  ↓
+RAG Engine (Optional)
+  ↓
+Redis Cache
+  ↓
+Circuit Breaker + Retry + Timeout
+  ↓
+Provider (OpenAI / Anthropic / Mock)
+  ↓
+Response (Cost + Metadata)
+
+=====================================================================
+
+🔥 CORE CAPABILITIES
+
+=====================================================================
+
+🔐 Authentication
+- Gateway API Key support
+- JWT user support
+- Role-based enforcement
+
+⚡ Distributed Rate Limiting
+- Redis-backed
+- Role-aware limits
+- Configurable via `.env`
+
+🧠 Hybrid RAG Engine
+- Document chunking
+- Embedding generation
+- Vector + keyword hybrid similarity
+- Configurable alpha/beta weighting
+- Mock-compatible
+
+🛡 Guardrails
+- Prompt injection detection
+- Unsafe pattern blocking
+
+🔁 Resilience
+- Circuit breaker per provider
+- Automatic retry for transient errors
+- Global timeout protection
+
+💰 Cost Estimation
+- Model-based token cost calculation
+
+🧮 Token Counting
+- GPT tokenizer integration
+
+🗄 Redis Caching
+- Response caching
+- Configurable TTL
+- Cache bypass option
+
+🧪 Mock Mode
+- Mock LLM provider
+- Mock embeddings
+- Full system testable offline
+
+=====================================================================
+
+📦 INSTALLATION
+
+=====================================================================
+
+git clone <your-repo-url>
+cd secure-llm-gateway
+npm install
+
+=====================================================================
+
+⚙️ ENVIRONMENT SETUP
+
+=====================================================================
+
+Create `.env` file in project root.
+
+Minimum required:
+
+PORT=3000
+GATEWAY_API_KEY=dev-gateway-key
+REDIS_URL=redis://default:<password>@<host>:<port>
+
+=====================================================================
+
+▶ RUNNING SERVER
+
+=====================================================================
+
+npm run dev
+
+Server runs on:
+http://localhost:3000
+
+=====================================================================
+
+🧪 TESTING
+
+=====================================================================
+
+Health Check:
+GET /health
+
+Completion:
+POST /v1/completion
+
+Headers:
+Authorization: Bearer dev-gateway-key
+Content-Type: application/json
+
+Body:
+{
+  "prompt": "Explain JWT",
+  "provider": "mock"
+}
+
+RAG Example:
+{
+  "prompt": "What is JWT?",
+  "provider": "mock",
+  "options": {
+    "useRag": true
+  }
+}
+
+=====================================================================
+
+📂 PROJECT STRUCTURE
+
+=====================================================================
+
+src/
+ ├── api/
+ ├── gateway/
+ ├── providers/
+ ├── services/
+ ├── utils/
+ └── index.js
+
+=====================================================================
+
+📊 ENTERPRISE FEATURE CHECKLIST
+
+=====================================================================
+
+API Key Auth              ✅
+JWT Support               ✅
+Role-Based Limits         ✅
+Redis Rate Limiting       ✅
+Guardrails                ✅
+Circuit Breaker           ✅
+Retry Logic               ✅
+Global Timeout            ✅
+Cost Estimation           ✅
+Token Counting            ✅
+Redis Caching             ✅
+Hybrid RAG                ✅
+Mock Mode                 ✅
+
+=====================================================================
+
+🏗 DESIGNED FOR
+
+=====================================================================
+
+- SaaS AI Platforms
+- Multi-tenant LLM Systems
+- Enterprise AI Infrastructure
+- Secure API Proxying
+- Cost-Controlled GenAI Deployments
+
+=====================================================================
+
+🏁 VERSION
+
+=====================================================================
+
+v1.0 – Production-Ready Secure LLM Gateway
+
+=====================================================================
+
+🎯 FINAL NOTE
+
+=====================================================================
+
+This is not a simple LLM wrapper.
+
+This is a secure, resilient, scalable LLM orchestration layer designed for real-world production systems.

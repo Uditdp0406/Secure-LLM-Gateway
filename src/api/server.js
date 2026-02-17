@@ -1,46 +1,44 @@
-/**
- * Express server setup
- * Configures middleware and routes
- */
-
 const express = require('express');
 const authenticate = require('./middleware/auth');
 const rateLimit = require('./middleware/rateLimit');
+const guardrails = require('./middleware/guardrails');
 const errorHandler = require('./middleware/errorHandler');
 const completionRoutes = require('./routes/completion');
 const healthRoutes = require('./routes/health');
-const logger = require('../utils/logger');
+const metricsRoutes = require('./routes/metrics');
+const ragRoutes = require('./routes/rag');
+
+const requestId = require('./middleware/requestId');
+const latency = require('./middleware/latency');
 
 const app = express();
 
 // Body parsing
 app.use(express.json({ limit: '1mb' }));
 
-// Request logging
-app.use((req, res, next) => {
-  const start = Date.now();
-  
-  res.on('finish', () => {
-    const duration = Date.now() - start;
-    logger.info('HTTP request', {
-      method: req.method,
-      path: req.path,
-      statusCode: res.statusCode,
-      duration,
-      ip: req.ip
-    });
-  });
-  
-  next();
-});
+// ===== Global Middleware Order =====
 
-// Health check (no auth required)
+// 1️⃣ Attach request ID
+app.use(requestId);
+
+// 2️⃣ Track latency
+app.use(latency);
+
+// 3️⃣ Health check (no auth required)
 app.use('/', healthRoutes);
 
-// API routes (with auth and rate limiting)
-app.use('/v1', authenticate, rateLimit, completionRoutes);
+// 4️⃣ Protected API routes
+app.use(
+  '/v1',
+  authenticate,
+  rateLimit,
+  guardrails,   // 🔥 Injection protection layer
+  completionRoutes,
+  metricsRoutes,
+  ragRoutes
+);
 
-// 404 handler
+// 5️⃣ 404 handler
 app.use((req, res) => {
   res.status(404).json({
     error: {
@@ -50,7 +48,7 @@ app.use((req, res) => {
   });
 });
 
-// Global error handler (must be last)
+// 6️⃣ Global error handler (must be last)
 app.use(errorHandler);
 
 module.exports = app;

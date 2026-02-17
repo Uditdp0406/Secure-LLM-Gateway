@@ -1,39 +1,51 @@
 /**
  * Authentication middleware
- * Validates API key for gateway access
+ * Supports:
+ * 1. Gateway API Key validation
+ * 2. JWT user authentication
  */
 
-const { AuthenticationError } = require('../../utils/errors');
-const config = require('../../utils/config');
-const logger = require('../../utils/logger');
+const jwt = require("jsonwebtoken");
+const { AuthenticationError } = require("../../utils/errors");
+const config = require("../../utils/config");
+const logger = require("../../utils/logger");
 
 function authenticate(req, res, next) {
-  // Skip auth in development if no key is set
-  if (config.environment === 'development' && !config.gatewayApiKey) {
-    logger.warn('Authentication bypassed - no GATEWAY_API_KEY set in development');
-    return next();
-  }
-
   const authHeader = req.headers.authorization;
-  
+
   if (!authHeader) {
-    return next(new AuthenticationError('Missing authorization header'));
+    return next(new AuthenticationError("Missing authorization header"));
   }
 
-  // Support both "Bearer token" and "token" formats
-  const token = authHeader.startsWith('Bearer ')
+  const token = authHeader.startsWith("Bearer ")
     ? authHeader.substring(7)
     : authHeader;
 
-  if (token !== config.gatewayApiKey) {
-    logger.warn('Authentication failed', {
-      ip: req.ip,
-      path: req.path
-    });
-    return next(new AuthenticationError('Invalid API key'));
+  // 🔐 1️⃣ Check if it's gateway API key
+  if (token === config.gatewayApiKey) {
+    req.gateway = true;
+    return next();
   }
 
-  next();
+  // 🔐 2️⃣ Otherwise treat as JWT
+  try {
+    const decoded = jwt.verify(token, config.jwtSecret);
+
+    req.user = {
+      id: decoded.id,
+      role: decoded.role,
+      email: decoded.email,
+    };
+
+    return next();
+  } catch (err) {
+    logger.warn("Authentication failed", {
+      ip: req.ip,
+      path: req.path,
+    });
+
+    return next(new AuthenticationError("Invalid token"));
+  }
 }
 
 module.exports = authenticate;
