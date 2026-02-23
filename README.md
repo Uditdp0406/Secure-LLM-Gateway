@@ -228,17 +228,17 @@ RAG Example:
 
 =====================================================================
 
-📂 PROJECT STRUCTURE
+## 📂 Project Structure
 
-=====================================================================
-
+```
 src/
- ├── api/
- ├── gateway/
- ├── providers/
- ├── services/
- ├── utils/
- └── index.js
+├── api/         # Route definitions
+├── gateway/     # API gateway logic
+├── providers/   # External service integrations
+├── services/    # Business logic
+├── utils/       # Helper functions
+└── index.js     # Application entry point
+```
 
 =====================================================================
 
